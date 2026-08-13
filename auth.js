@@ -1,0 +1,2 @@
+/* Y Soft — autenticación Firebase. La sesión no sustituye las reglas Firestore. */
+(function () { const D = window.YSoft = window.YSoft || {}; D.Auth = { signIn:(email,password) => D.firebaseAuth ? D.firebaseAuth.signInWithEmailAndPassword(email,password) : Promise.reject(new Error('Firebase pendiente')), signOut:() => D.firebaseAuth ? D.firebaseAuth.signOut() : Promise.resolve(), onChange:(callback) => D.firebaseAuth ? D.firebaseAuth.onAuthStateChanged(callback) : () => {} }; })();

@@ -1,0 +1,2 @@
+/* Y Soft — tablas simples para reportes y conciliación. */
+(function () { const D = window.YSoft = window.YSoft || {}; D.Table = ({ headers, rows }) => D.h('div',{className:'panel'},[D.h('div',{className:'table-head'},headers.map((header)=>D.h('strong',{key:header},header))),rows.map((row,index)=>D.h('div',{className:'table-row',key:index},row.map((cell,cellIndex)=>D.h('span',{key:cellIndex},cell))))]); })();

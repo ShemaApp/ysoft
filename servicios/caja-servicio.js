@@ -1,0 +1,2 @@
+/* Y Soft — caja: apertura, movimientos y cierre son registros conciliables. */
+(function () { const D = window.YSoft = window.YSoft || {}; D.services = D.services || {}; D.services.cash = { open:() => Promise.reject(new Error('La apertura real requiere políticas de caja confirmadas')), close:() => Promise.reject(new Error('El cierre real requiere conteo y autorización confirmados')), movements:() => D.firestore ? D.firestore.collection('movimientosCaja').get() : Promise.resolve(D.demoMovements) }; })();

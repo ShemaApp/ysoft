@@ -1,0 +1,2 @@
+/* Y Soft — modales para confirmaciones de venta, abono, devolución y ajuste. */
+(function () { const D = window.YSoft = window.YSoft || {}; D.Modal = ({ title, children, onClose }) => D.h('div',{className:'modal-backdrop'},D.h('section',{className:'panel',role:'dialog','aria-modal':'true'},[D.h('div',{className:'panel-title'},[D.h('h3',null,title),D.h('button',{className:'button button-ghost',onClick:onClose},'Cerrar')]),children])); })();

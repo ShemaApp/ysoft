@@ -1,0 +1,2 @@
+/* Y Soft — créditos y abonos: el saldo no se modifica manualmente. */
+(function () { const D = window.YSoft = window.YSoft || {}; D.services = D.services || {}; D.services.credits = { byCustomer:(customerId) => D.firestore ? D.firestore.collection('creditos').where('clienteId','==',customerId).get() : Promise.resolve([]), registerPayment:() => Promise.reject(new Error('Los abonos requieren reglas y asignación de crédito confirmadas')) }; })();

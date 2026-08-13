@@ -1,0 +1,2 @@
+/* Y Soft — matriz inicial de permisos. Debe reflejarse también en firestore.rules. */
+(function () { const D = window.YSoft = window.YSoft || {}; D.permissions = { vender:['admin','vendedor','cajero'], venderCredito:['admin','vendedor'], registrarAbono:['admin','cajero','cobrador'], ajustarInventario:['admin','inventario'], devolver:['admin','supervisor'], cerrarCaja:['admin','cajero'], consultarCostos:['admin','supervisor'], administrarUsuarios:['admin'] }; D.can = (action,role) => Boolean(D.permissions[action] && D.permissions[action].includes(role)); })();

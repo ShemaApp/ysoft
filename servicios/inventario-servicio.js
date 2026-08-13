@@ -1,0 +1,2 @@
+/* Y Soft — inventario: todo ajuste debe tener tipo, cantidad, motivo y origen. */
+(function () { const D = window.YSoft = window.YSoft || {}; D.services = D.services || {}; D.services.inventory = { movements:(filters={}) => D.firestore ? D.firestore.collection('movimientosInventario').where('productoId','==',filters.productId).get() : Promise.resolve([]), proposeAdjustment:(payload) => Promise.reject(new Error('Ajustes requieren reglas y autorización confirmadas')), reserveForSale:(lines) => ({ lines, valid:true }) }; })();

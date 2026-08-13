@@ -1,0 +1,11 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Regla de arranque segura: no habilita datos reales hasta confirmar organización,
+    // roles, campos permitidos y transacciones confiables.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

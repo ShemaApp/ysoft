@@ -1,0 +1,2 @@
+/* Y Soft — ventas: contado y crédito son hechos separados de inventario y cartera. */
+(function () { const D = window.YSoft = window.YSoft || {}; D.services = D.services || {}; D.services.sales = { prepare:(lines,type) => ({ lines,type,total:lines.reduce((sum,line) => sum + line.price * line.qty,0) }), confirm:() => Promise.reject(new Error('La escritura de ventas requiere Firebase y reglas transaccionales activas')) }; })();

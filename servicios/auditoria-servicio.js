@@ -1,0 +1,2 @@
+/* Y Soft — auditoría: hechos sensibles deben conservar creador, fecha, motivo y origen. */
+(function () { const D = window.YSoft = window.YSoft || {}; D.services = D.services || {}; D.services.audit = { record:() => Promise.reject(new Error('La auditoría real requiere Firebase configurado')), recent:() => D.firestore ? D.firestore.collection('auditoria').orderBy('createdAt','desc').limit(50).get() : Promise.resolve(D.demoMovements) }; })();
