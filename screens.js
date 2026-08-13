@@ -28,9 +28,9 @@
         h(Kpi, { icon:'cash', label:'Caja esperada', value:'$ 2.026.000', note:'contado + abonos' }),
       ]),
       h('div', { className:'content-heading', key:'heading-actions' }, h('div', null, [h('h2', null, 'Acciones de turno'), h('p', null, 'Lo frecuente, a un toque de distancia.')])),
-      h('div', { className:'action-rail', key:'actions' }, [
+      h('div', { className:'action-rail home-actions', key:'actions' }, [
         h(Action, { icon:'receipt', title:'Vender contado', detail:'Salida y caja', onClick:() => setView('ventas') }),
-        h(Action, { icon:'plus', title:'Registrar abono', detail:'Actualizar cartera', onClick:() => setView('clientes') }),
+        h(Action, { icon:'user-plus', title:'Registrar abono', detail:'Actualizar cartera', onClick:() => setView('clientes') }),
         h(Action, { icon:'users', title:'Ver clientes', detail:'Consultar cartera', onClick:() => setView('clientes') }),
         h(Action, { icon:'box', title:'Revisar stock', detail:lowStock + ' alertas activas', onClick:() => setView('productos') }),
       ]),
