@@ -1,6 +1,6 @@
 /* Y Soft — caché mínima para una PWA estática. */
-const CACHE_NAME = 'ysoft-pwa-v2-firebase';
-const APP_SHELL = ['./', './index.html', './styles.css', './firebase-init.js', './auth.js', './permisos.js', './servicios/productos-servicio.js', './servicios/inventario-servicio.js', './servicios/ventas-servicio.js', './servicios/creditos-servicio.js', './servicios/caja-servicio.js', './servicios/auditoria-servicio.js', './componentes/botones.js', './componentes/modales.js', './componentes/tablas.js', './componentes/estados.js', './pantallas/dashboard.js', './pantallas/productos.js', './pantallas/inventario.js', './pantallas/ventas.js', './pantallas/clientes.js', './pantallas/creditos.js', './pantallas/caja.js', './pantallas/reportes.js', './app.js', './manifest.webmanifest', './ysoft-mark.svg'];
+const CACHE_NAME = 'ysoft-pwa-v4-home-reference';
+const APP_SHELL = ['./', './index.html', './styles.css', './firebase-init.js', './config.js', './data.js', './components.js', './screens.js', './screens-more.js', './app.js', './manifest.webmanifest', './ysoft-mark.svg'];
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
   self.skipWaiting();
