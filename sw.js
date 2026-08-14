@@ -1,6 +1,6 @@
 /* Y Soft — caché mínima para una PWA estática. */
-const CACHE_NAME = 'ysoft-pwa-v4-home-reference';
-const APP_SHELL = ['./', './index.html', './styles.css', './firebase-init.js', './config.js', './data.js', './components.js', './screens.js', './screens-more.js', './app.js', './manifest.webmanifest', './ysoft-mark.svg'];
+const CACHE_NAME = 'ysoft-pwa-v5-firestore-real';
+const APP_SHELL = ['./', './index.html', './styles.css', './firebase-init.js', './config.js', './data.js', './firestore-service.js', './components.js', './screens.js', './screens-more.js', './app.js', './manifest.webmanifest', './ysoft-mark.svg'];
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
   self.skipWaiting();

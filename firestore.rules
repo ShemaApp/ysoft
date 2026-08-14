@@ -2,10 +2,103 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Regla de arranque segura: no habilita datos reales hasta confirmar organización,
-    // roles, campos permitidos y transacciones confiables.
-    match /{document=**} {
-      allow read, write: if false;
+    function signedIn() { return request.auth != null; }
+    function userExists() { return signedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)); }
+    function userData() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
+    function sameOrg(data) { return userExists() && data.organizationId == userData().organizationId; }
+    function hasRole(role) { return userExists() && userData().role == role; }
+    function anyRole(a, b, c, d) { return hasRole(a) || hasRole(b) || hasRole(c) || hasRole(d); }
+    function actor(data) { return signedIn() && data.createdBy == request.auth.uid && sameOrg(data); }
+    function positiveInteger(value) { return value is int && value > 0; }
+    function nonNegativeInteger(value) { return value is int && value >= 0; }
+
+    match /users/{uid} {
+      allow read: if signedIn() && uid == request.auth.uid;
+      allow write: if false;
     }
+
+    match /products/{productId} {
+      allow read: if signedIn() && sameOrg(resource.data);
+      allow update: if (signedIn() && sameOrg(resource.data) && hasRole('admin')) ||
+        (signedIn() && sameOrg(resource.data) && anyRole('vendedor', 'cajero', 'inventario', 'supervisor') &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stock', 'updatedAt', 'lastMovementId', 'lastMovementType', 'lastMovementQuantity']) &&
+          request.resource.data.lastMovementType == 'sale' &&
+          positiveInteger(request.resource.data.lastMovementQuantity) &&
+          getAfter(/databases/$(database)/documents/inventoryMovements/$(request.resource.data.lastMovementId)).data.productId == productId &&
+          getAfter(/databases/$(database)/documents/inventoryMovements/$(request.resource.data.lastMovementId)).data.quantitySigned == -request.resource.data.lastMovementQuantity &&
+          request.resource.data.stock == resource.data.stock + getAfter(/databases/$(database)/documents/inventoryMovements/$(request.resource.data.lastMovementId)).data.quantitySigned);
+      allow create, delete: if false;
+    }
+
+    match /customers/{customerId} {
+      allow read: if signedIn() && sameOrg(resource.data);
+      allow update: if signedIn() && sameOrg(resource.data) && anyRole('admin', 'cajero', 'cobrador', '') &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['balanceMinorProjection', 'updatedAt', 'lastPaymentId', 'lastPaymentAmountMinor']) &&
+        getAfter(/databases/$(database)/documents/creditPayments/$(request.resource.data.lastPaymentId)).data.customerId == customerId &&
+        request.resource.data.lastPaymentAmountMinor == getAfter(/databases/$(database)/documents/creditPayments/$(request.resource.data.lastPaymentId)).data.amountMinor &&
+        request.resource.data.balanceMinorProjection == resource.data.balanceMinorProjection - request.resource.data.lastPaymentAmountMinor;
+      allow create, delete: if false;
+    }
+
+    match /credits/{creditId} {
+      allow read: if signedIn() && sameOrg(resource.data);
+      allow update: if signedIn() && sameOrg(resource.data) && anyRole('admin', 'cajero', 'cobrador', '') &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['balanceMinorProjection', 'status', 'updatedAt', 'lastPaymentId', 'lastPaymentAmountMinor']) &&
+        getAfter(/databases/$(database)/documents/creditPayments/$(request.resource.data.lastPaymentId)).data.creditId == creditId &&
+        request.resource.data.lastPaymentAmountMinor == getAfter(/databases/$(database)/documents/creditPayments/$(request.resource.data.lastPaymentId)).data.amountMinor &&
+        request.resource.data.balanceMinorProjection == resource.data.balanceMinorProjection - request.resource.data.lastPaymentAmountMinor;
+      allow create, delete: if false;
+    }
+
+    match /sales/{saleId} {
+      allow read: if signedIn() && sameOrg(resource.data);
+      allow create: if actor(request.resource.data) && anyRole('admin', 'vendedor', 'cajero', '') &&
+        request.resource.data.saleType == 'contado' && request.resource.data.status == 'confirmed' &&
+        nonNegativeInteger(request.resource.data.totalMinor) && request.resource.data.idempotencyKey == saleId;
+      allow update, delete: if false;
+    }
+
+    match /saleItems/{itemId} {
+      allow read: if signedIn() && sameOrg(resource.data);
+      allow create: if actor(request.resource.data) && anyRole('admin', 'vendedor', 'cajero', '') &&
+        positiveInteger(request.resource.data.quantity) && nonNegativeInteger(request.resource.data.lineTotalMinor);
+      allow update, delete: if false;
+    }
+
+    match /inventoryMovements/{movementId} {
+      allow read: if signedIn() && sameOrg(resource.data);
+      allow create: if actor(request.resource.data) && anyRole('admin', 'vendedor', 'cajero', '') &&
+        request.resource.data.sourceType == 'sale' && request.resource.data.type == 'sale' &&
+        positiveInteger(request.resource.data.quantity) && request.resource.data.quantitySigned == -request.resource.data.quantity &&
+        nonNegativeInteger(request.resource.data.stockBefore) && nonNegativeInteger(request.resource.data.stockAfter) &&
+        request.resource.data.stockAfter == request.resource.data.stockBefore + request.resource.data.quantitySigned;
+      allow update, delete: if false;
+    }
+
+    match /cashMovements/{movementId} {
+      allow read: if signedIn() && sameOrg(resource.data);
+      allow create: if actor(request.resource.data) && anyRole('admin', 'vendedor', 'cajero', 'cobrador');
+      allow update, delete: if false;
+    }
+
+    match /creditPayments/{paymentId} {
+      allow read: if signedIn() && sameOrg(resource.data);
+      allow create: if actor(request.resource.data) && anyRole('admin', 'cajero', 'cobrador', '') && positiveInteger(request.resource.data.amountMinor) && request.resource.data.idempotencyKey == paymentId;
+      allow update, delete: if false;
+    }
+
+    match /inventoryAdjustments/{adjustmentId} {
+      allow read: if signedIn() && sameOrg(resource.data);
+      allow create: if actor(request.resource.data) && anyRole('admin', 'inventario', 'supervisor', '') && request.resource.data.status == 'requested' && positiveInteger(request.resource.data.quantity) && request.resource.data.direction in ['increase', 'decrease'];
+      allow update, delete: if false;
+    }
+
+    match /auditEvents/{eventId} {
+      allow read: if signedIn() && sameOrg(resource.data);
+      allow create: if actor(request.resource.data) && anyRole('admin', 'vendedor', 'cajero', 'cobrador');
+      allow update, delete: if false;
+    }
+
+    match /{document=**} { allow read, write: if false; }
   }
 }

@@ -4,6 +4,8 @@
   const D = window.YSoft = window.YSoft || {};
   const config = window.YSOFT_FIREBASE_CONFIG || window.DISTRIBUIDORA_FIREBASE_CONFIG || { apiKey: '', authDomain: '', projectId: '', storageBucket: '', messagingSenderId: '', appId: '' };
   D.firebaseConfig = config;
+  D.organizationId = config.organizationId || config.projectId || 'ysoft';
+  D.locationId = config.locationId || 'default';
   D.hasFirebaseConfig = Boolean(config.apiKey && config.projectId && config.appId);
   D.firebaseAuth = null; D.firestore = null; D.firebaseBootError = '';
   if (D.hasFirebaseConfig && window.firebase) {

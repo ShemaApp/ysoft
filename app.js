@@ -1,7 +1,7 @@
 /*
   Y Soft — shell de aplicación.
-  Las operaciones de revisión actualizan el estado local para explorar el flujo; ninguna escritura financiera
-  se envía a Firestore hasta confirmar políticas y desplegar reglas transaccionales revisadas.
+  Las operaciones financieras pasan por servicios transaccionales; el crédito y las políticas aún pendientes
+  permanecen bloqueados hasta que el negocio publique sus reglas definitivas.
 */
 (function () {
   'use strict';
@@ -55,6 +55,15 @@
     }, [authUser]);
 
     useEffect(() => {
+      if (!D.firestore || !authUser) return undefined;
+      const unsubscribe = D.firestore.collection('customers').where('active', '==', true).limit(100).onSnapshot((snapshot) => {
+        const remote = snapshot.docs.map((doc) => ({ id:doc.id, ...doc.data() }));
+        if (remote.length) setCustomers(remote.map((customer) => ({ ...customer, balance:Number(customer.balanceMinorProjection ?? customer.balance ?? 0) })));
+      }, () => setToast('No se pudo leer clientes remotos; se conserva la vista de revisión.'));
+      return unsubscribe;
+    }, [authUser]);
+
+    useEffect(() => {
       if (!toast) return undefined;
       const timer = window.setTimeout(() => setToast(''), 3300); return () => window.clearTimeout(timer);
     }, [toast]);
@@ -67,17 +76,37 @@
       return [...current, { ...product, qty }];
     });
     const setCartQty = (id, rawValue) => setCart((current) => current.map((item) => item.id === id ? { ...item, qty:Math.max(0, Math.min(Number(String(rawValue).replace(/[^0-9]/g, '')) || 0, item.stock)) } : item).filter((item) => item.qty > 0));
-    const confirmSale = (saleType, customerId) => {
+    const confirmSale = async (saleType, customerId) => {
       if (!cart.length) { setToast('Agrega al menos un producto antes de confirmar.'); return; }
       if (!cashOpen) { setToast('La caja está cerrada; abre un turno antes de vender.'); return; }
       const total = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
       if (saleType === 'credito') { setToast(customerId ? 'La venta a crédito está lista, pero la política de crédito sigue pendiente de confirmación.' : 'Selecciona un cliente antes de solicitar la aprobación.'); return; }
-      setProducts((current) => current.map((product) => { const line = cart.find((item) => item.id === product.id); return line ? { ...product, stock:product.stock - line.qty } : product; }));
-      setCart([]); setToast('Venta de contado preparada en modo revisión · ' + D.money(total)); setView('inicio');
+      if (!D.services.firestore) { setToast('El servicio Firestore todavía no está disponible.'); return; }
+      setToast('Guardando venta de contado…');
+      try {
+        await D.services.firestore.confirmCashSale({ lines:cart });
+        setProducts((current) => current.map((product) => { const line = cart.find((item) => item.id === product.id); return line ? { ...product, stock:product.stock - line.qty } : product; }));
+        setCart([]); setToast('Venta guardada en Firestore · ' + D.money(total)); setView('inicio');
+      } catch (error) { setToast(error.message || 'No se pudo guardar la venta.'); }
     };
-    const registerPayment = (customerId) => {
-      setCustomers((current) => current.map((customer) => customer.id === customerId ? { ...customer, balance:Math.max(0, customer.balance - 180000) } : customer));
-      setToast('Abono preparado para revisión; la escritura real requiere Firebase y reglas activas.');
+    const registerPayment = async (customerId, amountMinor, method) => {
+      if (!D.services.firestore) { setToast('El servicio Firestore todavía no está disponible.'); return false; }
+      setToast('Guardando abono…');
+      try {
+        const result = await D.services.firestore.registerPayment({ customerId, amountMinor, method });
+        setCustomers((current) => current.map((customer) => customer.id === customerId ? { ...customer, balance:Math.max(0, customer.balance - Number(amountMinor)) } : customer));
+        setToast(result.repeated ? 'El abono ya estaba guardado.' : 'Abono guardado en Firestore.');
+        return true;
+      } catch (error) { setToast(error.message || 'No se pudo guardar el abono.'); return false; }
+    };
+    const saveAdjustment = async (payload) => {
+      if (!D.services.firestore) { setToast('El servicio Firestore todavía no está disponible.'); return false; }
+      setToast('Guardando solicitud de ajuste…');
+      try {
+        await D.services.firestore.requestInventoryAdjustment(payload);
+        setToast('Solicitud de ajuste guardada en Firestore.');
+        return true;
+      } catch (error) { setToast(error.message || 'No se pudo guardar el ajuste.'); return false; }
     };
     const logout = () => D.firebaseAuth && D.firebaseAuth.signOut();
 
@@ -90,7 +119,7 @@
       ventas:h(Screens.SalesView, { products, customers, cart, addToCart, setCartQty, confirmSale, setView, setToast }),
       clientes:h(Screens.CustomersView, { customers, registerPayment, setToast }),
       caja:h(Screens.CashView, { cashOpen, setCashOpen, setToast }),
-      control:h(Screens.ControlView, { products, setView, setToast }),
+      control:h(Screens.ControlView, { products, setView, setToast, saveAdjustment }),
       reportes:h(Screens.ReportsView, { products, customers }),
       menu:h(Screens.MenuView, { setView, toggleTheme:() => setDarkMode((current) => !current), darkMode }),
       ajustes:h(Screens.SettingsView, { firebaseReady:Boolean(D.firestore), authUser, logout, setToast }),

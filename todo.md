@@ -23,3 +23,10 @@
 - [x] Implementar bosquejos operables de abono, cierre de caja y devolución/ajuste.
 - [x] Fijar marca Y Soft en la cabecera común y reducir la franja verde superior.
 - [x] Validar móvil, navegación y campos libres; sincronizar con GitHub mediante commit y push.
+- [ ] Auditar y documentar las colecciones y estados que recibirán escrituras reales.
+- [ ] Implementar transacciones de ventas, abonos y ajustes con auditoría y referencias de origen.
+- [ ] Reforzar `firestore.rules` con autenticación, roles y validaciones de campos sensibles.
+- [ ] Probar escrituras en Firebase con una cuenta autorizada y datos controlados.
+- [ ] Confirmar con el usuario políticas pendientes antes de activar impuestos, crédito, stock negativo o devoluciones.
+- [ ] Publicar `firestore.rules` desde una sesión administrativa verificable y confirmar su versión activa.
+- [ ] Ejecutar una prueba controlada de lectura y escritura con usuario autorizado, sin datos de prueba permanentes.
