@@ -4,7 +4,10 @@
   const h = React.createElement;
   D.h = h;
   D.Icon = function Icon({ name, size = 18, stroke = 1.8 }) { return h('svg', { width:size, height:size, viewBox:'0 0 24 24', fill:'none', stroke:'currentColor', strokeWidth:stroke, strokeLinecap:'round', strokeLinejoin:'round', 'aria-hidden':true }, h('path', { d:D.icons[name] || D.icons.grid })); };
-  D.Button = function Button({ children, kind='secondary', icon, onClick, disabled=false, type='button' }) { return h('button', { type, className:'button button-' + kind, onClick, disabled }, icon ? [h(D.Icon, { key:'icon', name:icon, size:16 }), h('span', { key:'label' }, children)] : children); };
+  D.Button = function Button({ children, kind='secondary', icon, onClick, disabled=false, type='button', loading=false, loadingLabel='Guardando…' }) {
+    const content = loading ? [h('span', { key:'spinner', className:'button-spinner', 'aria-hidden':true }), h('span', { key:'label' }, loadingLabel)] : icon ? [h(D.Icon, { key:'icon', name:icon, size:16 }), h('span', { key:'label' }, children)] : children;
+    return h('button', { type, className:'button button-' + kind, onClick, disabled:disabled || loading, 'aria-busy':loading || undefined }, content);
+  };
   D.Status = function Status({ children, tone='green' }) { return h('span', { className:'status status-' + tone }, children); };
   D.Kpi = function Kpi({ label, value, note, primary, icon }) { return h('div', { className:'kpi-card' + (primary ? ' primary' : '') }, [h('div', { className:'kpi-topline' }, [icon && h('div', { key:'icon', className:'kpi-icon' }, h(D.Icon, { name:icon, size:21 })), h('div', { key:'label', className:'kpi-label' }, label)]), h('div', { className:'kpi-value' }, value), h('div', { className:'kpi-note' }, note)]); };
   D.Action = function Action({ icon, title, detail, onClick }) { return h('button', { className:'action-card', onClick }, [h('div', { key:'icon', className:'action-icon' }, h(D.Icon, { name:icon, size:21 })), h('div', { key:'copy' }, [h('strong', { key:'title' }, title), h('span', { key:'detail' }, detail)])]); };

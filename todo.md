@@ -30,3 +30,5 @@
 - [ ] Confirmar con el usuario políticas pendientes antes de activar impuestos, crédito, stock negativo o devoluciones.
 - [ ] Publicar `firestore.rules` desde una sesión administrativa verificable y confirmar su versión activa.
 - [ ] Ejecutar una prueba controlada de lectura y escritura con usuario autorizado, sin datos de prueba permanentes.
+- [x] Añadir indicadores de carga y bloquear doble envío al registrar ventas, abonos y ajustes.
+- [x] Añadir notificaciones de éxito y error con mensajes operativos comprensibles.
