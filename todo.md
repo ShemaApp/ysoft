@@ -57,3 +57,6 @@
 - [x] Corregir localmente la matriz de autorización y los contratos de escritura sin comodines inseguros.
 - [ ] Validar reglas con escenarios permitidos y rechazados antes de publicarlas.
 - [x] Invalidar la caché PWA con una nueva versión del Service Worker y sincronizar el shell actual.
+- [ ] Diagnosticar el estado `Cargando…` seguido de pantalla en blanco en la versión publicada.
+- [ ] Verificar errores de consola, orden de carga de Firebase/React y compatibilidad del Service Worker `v6`.
+- [ ] Validar el arranque en GitHub Pages antes de subir la corrección del bloqueo.

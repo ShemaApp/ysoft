@@ -13,7 +13,13 @@
     <title>Y Soft · Operación diaria</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="boot-screen" role="status" aria-live="polite">
+        <div class="boot-mark">YS</div>
+        <strong>Abriendo el cuaderno</strong>
+        <span>Comprobando la sesión y la operación local…</span>
+      </div>
+    </div>
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -28,5 +34,17 @@
     <script src="./screens.js?v=home4" defer></script>
     <script src="./screens-more.js?v=home4" defer></script>
     <script src="./app.js?v=home4" defer></script>
+    <script>
+      (function () {
+        function showBootError() {
+          var root = document.getElementById('root');
+          if (!root || root.querySelector('.app-shell') || root.querySelector('.auth-screen')) return;
+          root.innerHTML = '<div class="boot-screen boot-error" role="alert"><div class="boot-mark">YS</div><strong>No se pudo abrir Y Soft</strong><span>Recarga la aplicación. Si el problema continúa, borra los datos del sitio y vuelve a abrirla.</span><button type="button" onclick="window.location.reload()">Recargar</button></div>';
+        }
+        window.addEventListener('error', showBootError);
+        window.addEventListener('unhandledrejection', showBootError);
+        window.setTimeout(showBootError, 8000);
+      })();
+    </script>
   </body>
 </html>
