@@ -1,0 +1,1204 @@
+Sí. En ese caso no te recomiendo una colección productos sencilla con campos como nombre, precio, stock, categoria, porque cuando entren carnes, abarrotes, bebidas, medicamentos, refacciones, ropa, productos por peso, productos con lote, productos con serie, combos, servicios, etc., terminarás modificando la estructura constantemente.
+
+Yo construiría Y Soft desde ahora como un sistema de inventario genérico, donde el producto es una entidad flexible y el inventario depende de ubicaciones, unidades, lotes/series y movimientos.
+
+1. Arquitectura general
+
+Si vas a utilizar Firebase/Firestore, propondría algo así:
+
+Y SOFT
+│
+├── businesses
+│
+├── users
+│
+├── roles
+├── permissions
+├── user_permissions
+│
+├── locations
+├── registers
+│
+├── products
+├── product_variants
+├── product_attributes
+├── product_attribute_values
+├── product_barcodes
+├── units
+├── unit_conversions
+├── categories
+├── brands
+├── tax_profiles
+│
+├── suppliers
+├── customers
+│
+├── price_lists
+├── product_prices
+│
+├── inventory_balances
+├── inventory_movements
+├── inventory_counts
+├── inventory_count_items
+├── inventory_transfers
+├── inventory_transfer_items
+├── inventory_adjustments
+│
+├── lots
+├── serial_numbers
+│
+├── purchase_orders
+├── purchase_receipts
+├── purchase_receipt_items
+│
+├── sale_captures
+├── sale_capture_items
+├── sales
+├── sale_items
+├── sale_payments
+│
+├── returns
+├── return_items
+│
+├── customer_accounts
+├── customer_credit_limits
+├── customer_payments
+│
+├── cash_sessions
+├── cash_movements
+├── cash_transfers
+│
+├── discounts
+├── promotions
+│
+├── audit_logs
+├── notifications
+└── system_settings
+
+No significa que absolutamente todo tenga que implementarse el primer día. La estructura debe existir conceptualmente desde ahora, aunque varias funciones puedan quedar desactivadas hasta fases posteriores.
+
+
+---
+
+2. La colección más importante: products
+
+No la diseñaría así:
+
+producto
+├── nombre
+├── precio
+├── stock
+├── categoria
+└── peso
+
+Porque eso te limita.
+
+La diseñaría como producto maestro:
+
+products/{productId}
+
+{
+  businessId,
+
+  name,
+  shortName,
+  description,
+
+  productType,
+
+  brandId,
+  categoryId,
+
+  baseUnitId,
+
+  status,
+
+  trackInventory,
+  allowSale,
+  allowPurchase,
+
+  trackLot,
+  trackExpiration,
+  trackSerial,
+
+  isWeighted,
+  isVariableWeight,
+
+  taxProfileId,
+
+  defaultSupplierId,
+
+  imageUrl,
+
+  metadata,
+
+  createdAt,
+  createdBy,
+  updatedAt,
+  updatedBy
+}
+
+productType
+
+No lo limites a una sola clase.
+
+Por ejemplo:
+
+STOCK
+WEIGHTED
+VARIABLE
+SERVICE
+COMPOSITE
+BUNDLE
+SERIALIZED
+LOT_CONTROLLED
+
+Y en el futuro puedes agregar más sin destruir el modelo.
+
+
+---
+
+3. ¿Qué pasa con productos muy diferentes?
+
+Por ejemplo:
+
+Arroz
+
+Producto:
+Arroz Premium
+
+Unidad:
+kg
+
+Control:
+Inventario
+
+Código:
+ARZ-005
+
+Venta:
+por pieza / bolsa
+
+Carne
+
+Producto:
+Carne molida
+
+Unidad:
+kg
+
+Venta:
+peso variable
+
+Lote:
+Sí
+
+Caducidad:
+Sí
+
+Ubicación:
+Carnes
+
+Refacción
+
+Producto:
+Filtro de aceite
+
+Unidad:
+pieza
+
+SKU:
+FIL-001
+
+Número de serie:
+No
+
+Televisor
+
+Producto:
+Televisor 55"
+
+Unidad:
+pieza
+
+Número de serie:
+Sí
+
+Servicio
+
+Producto:
+Instalación
+
+Tipo:
+SERVICE
+
+Inventario:
+No
+
+Todos pueden coexistir en products.
+
+
+---
+
+4. No metas el stock dentro de products
+
+Esta es una decisión muy importante.
+
+No hagas:
+
+products
+   stock: 50
+
+Porque tú quieres manejar ubicaciones.
+
+En su lugar:
+
+inventory_balances
+
+Ejemplo:
+
+inventory_balances/{balanceId}
+
+{
+  businessId,
+  productId,
+  locationId,
+
+  quantity,
+  reservedQuantity,
+  availableQuantity,
+
+  averageCost,
+
+  minimumStock,
+  maximumStock,
+
+  updatedAt
+}
+
+Entonces:
+
+ARROZ
+
+Inventario global
+100
+
+Abarrotes
+70
+
+Almacén principal
+30
+
+El producto sigue siendo uno solo.
+
+
+---
+
+5. locations
+
+Esta colección será fundamental para tu modelo.
+
+locations/{locationId}
+
+{
+  businessId,
+
+  name,
+  code,
+
+  type,
+
+  parentLocationId,
+
+  address,
+
+  isActive,
+
+  createdAt,
+  createdBy,
+  updatedAt
+}
+
+type podría ser:
+
+WAREHOUSE
+STORE
+STORAGE
+PRODUCTION
+DISPLAY
+TRANSIT
+OTHER
+
+Así no estás obligado a llamar todo "almacén".
+
+
+---
+
+6. Usuarios + ubicación
+
+Aquí aplicamos exactamente lo que acabas de explicar.
+
+Un usuario podría tener:
+
+users/{userId}
+
+{
+  businessId,
+
+  name,
+  email,
+  phone,
+
+  roleId,
+
+  status,
+
+  defaultLocationId,
+
+  permissions,
+
+  createdAt,
+  updatedAt
+}
+
+Pero no confiaría solamente en defaultLocationId.
+
+También tendría:
+
+user_locations
+
+{
+  userId,
+  locationId,
+
+  canViewInventory,
+  canCountInventory,
+  canCreateEntries,
+  canTransfer,
+  canAdjust,
+
+  assignedAt,
+  assignedBy,
+
+  status
+}
+
+Esto permite:
+
+Pedro
+│
+├── Abarrotes
+│   ├── Consultar ✓
+│   ├── Inventariar ✓
+│   └── Ajustar ✗
+│
+└── Carnes
+    └── Sin acceso
+
+
+---
+
+7. Código de barras: colección independiente
+
+No pondría un solo barcode dentro de producto.
+
+Un producto puede tener:
+
+código interno
+
+EAN
+
+UPC
+
+código de proveedor
+
+código alternativo
+
+varios códigos de barras
+
+
+Entonces:
+
+product_barcodes/{barcodeId}
+
+{
+  businessId,
+
+  productId,
+  variantId,
+
+  barcode,
+  barcodeType,
+
+  isPrimary,
+
+  createdAt
+}
+
+Ejemplo:
+
+ARZ-005
+├── 7501234567890
+├── 7501234567891
+└── 7501234567892
+
+
+---
+
+8. Unidades de medida
+
+Esto es indispensable si quieres crecer.
+
+Colección:
+
+units
+
+Ejemplos:
+
+PIEZA
+KG
+GRAMO
+LITRO
+MILILITRO
+METRO
+CENTIMETRO
+CAJA
+PAQUETE
+BOLSA
+TARIMA
+ROLLO
+
+Y:
+
+unit_conversions
+
+Por ejemplo:
+
+1 CAJA = 12 PIEZAS
+1 KG = 1000 GRAMOS
+1 LITRO = 1000 ML
+
+Esto permite que un producto pueda comprarse en cajas y venderse por pieza.
+
+
+---
+
+9. Categorías: no las mezcles con ubicación
+
+Esto coincide exactamente con tu aclaración anterior.
+
+Categoría:
+Carnes
+
+no significa:
+
+Ubicación:
+Carnes
+
+Son conceptos independientes.
+
+Por ejemplo:
+
+Producto:
+Pechuga de pollo
+
+Categoría:
+Carnes
+
+Ubicación:
+Almacén refrigerado 01
+
+Otro:
+
+Producto:
+Pechuga de pollo
+
+Categoría:
+Carnes
+
+Ubicación:
+Tienda principal
+
+Esto es muchísimo más flexible.
+
+
+---
+
+10. Variantes
+
+Necesitas esto desde el principio.
+
+product_variants
+
+Ejemplo:
+
+Playera
+│
+├── Roja / CH
+├── Roja / M
+├── Roja / G
+├── Azul / CH
+├── Azul / M
+└── Azul / G
+
+Cada variante puede tener:
+
+SKU
+barcode
+precio
+costo
+peso
+dimensiones
+existencia
+
+Esto evita tener que crear productos completamente diferentes.
+
+
+---
+
+11. Atributos dinámicos
+
+Para productos futuros:
+
+product_attributes
+
+Ejemplos:
+
+Color
+Talla
+Material
+Marca
+Modelo
+Voltaje
+Potencia
+Sabor
+Presentación
+Peso
+Capacidad
+
+Y:
+
+product_attribute_values
+
+Así no necesitas modificar código cada vez que aparezca un nuevo tipo de artículo.
+
+
+---
+
+12. Movimientos de inventario
+
+Esta colección debería ser el historial contable del inventario.
+
+inventory_movements/{movementId}
+
+{
+  businessId,
+
+  productId,
+  variantId,
+
+  locationId,
+
+  type,
+
+  quantity,
+
+  unitId,
+
+  referenceType,
+  referenceId,
+
+  reason,
+
+  userId,
+
+  createdAt
+}
+
+Tipos:
+
+PURCHASE
+SALE
+RETURN
+TRANSFER_IN
+TRANSFER_OUT
+ADJUSTMENT
+COUNT
+DAMAGE
+LOSS
+EXPIRATION
+INITIAL_STOCK
+
+Regla importante
+
+Nunca borres movimientos de inventario.
+
+Si hubo un error:
+
+Movimiento incorrecto
+       ↓
+nuevo movimiento correctivo
+       ↓
+auditoría
+
+Eso te dará trazabilidad real.
+
+
+---
+
+13. Inventario actual
+
+inventory_balances es la fotografía actual.
+
+inventory_movements es la historia.
+
+inventory_balances
+       ↓
+"¿Cuánto tengo ahora?"
+
+inventory_movements
+       ↓
+"¿Cómo llegué a esa cantidad?"
+
+Esta separación es fundamental para que el sistema pueda crecer.
+
+
+---
+
+14. Tu inventario semanal
+
+Crearía:
+
+inventory_counts
+inventory_count_items
+
+Ejemplo:
+
+Inventario #00042
+
+Ubicación:
+Abarrotes
+
+Responsable:
+Pedro
+
+Fecha:
+13/08/2026
+
+Estado:
+EN_PROCESO
+
+Items:
+
+Arroz
+Sistema: 42
+Contado: 40
+Diferencia: -2
+
+Aceite
+Sistema: 18
+Contado: 18
+Diferencia: 0
+
+Y la diferencia no modifica directamente el stock.
+
+Primero:
+
+Conteo
+ ↓
+Diferencia
+ ↓
+Revisión
+ ↓
+Autorización
+ ↓
+Ajuste
+ ↓
+Movimiento de inventario
+
+
+---
+
+15. Compras y entradas
+
+Separaría:
+
+purchase_orders
+purchase_receipts
+purchase_receipt_items
+
+Porque una orden de compra no necesariamente significa que la mercancía ya llegó.
+
+Ejemplo:
+
+Orden de compra
+        ↓
+Proveedor
+        ↓
+Recepción parcial
+        ↓
+Entrada a ubicación
+        ↓
+Inventario
+
+
+---
+
+16. Tu flujo especial de capturista
+
+Aquí sí haría una colección específica:
+
+sale_captures
+sale_capture_items
+
+Captura
+
+sale_captures/{captureId}
+
+{
+  businessId,
+
+  capturedBy,
+
+  locationId,
+
+  status,
+
+  subtotal,
+  tax,
+  discount,
+  total,
+
+  transferredToRegisterId,
+  transferredAt,
+
+  reviewedBy,
+  reviewedAt,
+
+  saleId,
+
+  createdAt
+}
+
+Estados:
+
+DRAFT
+CAPTURING
+TRANSFERRED
+UNDER_REVIEW
+MODIFIED
+AUTHORIZED
+COMPLETED
+CANCELLED
+EXPIRED
+
+Items
+
+sale_capture_items/{itemId}
+
+{
+  captureId,
+
+  productId,
+  variantId,
+
+  quantity,
+  unitId,
+
+  unitPrice,
+
+  discount,
+
+  tax,
+
+  subtotal,
+
+  createdAt
+}
+
+Esto permite exactamente:
+
+Capturista
+   ↓
+Escanea
+   ↓
+Escanea
+   ↓
+Escanea
+   ↓
+Transfiere
+   ↓
+Caja
+   ↓
+Revisa
+   ↓
+Agrega/modifica
+   ↓
+Autoriza
+   ↓
+Cobra
+   ↓
+Venta definitiva
+
+
+---
+
+17. La venta definitiva debe ser independiente
+
+No conviertas automáticamente una captura en venta.
+
+Debe existir:
+
+sales
+sale_items
+sale_payments
+
+Porque:
+
+> captura ≠ venta
+
+
+
+La venta nace cuando el cajero autoriza.
+
+Esto además te protege para auditoría.
+
+
+---
+
+18. Clientes y crédito
+
+Para clientes:
+
+customers
+customer_accounts
+customer_credit_limits
+customer_payments
+
+Ejemplo:
+
+customers
+   ↓
+Juan Pérez
+
+customer_credit_limits
+   ↓
+Límite: $5,000
+
+customer_accounts
+   ↓
+Saldo actual: $1,850
+
+customer_payments
+   ↓
+Historial de abonos
+
+No guardaría simplemente:
+
+customer.balance = 1850
+
+como única fuente de verdad.
+
+El saldo debe poder reconstruirse a partir de movimientos.
+
+
+---
+
+19. Caja
+
+También separaría:
+
+registers
+cash_sessions
+cash_movements
+cash_transfers
+
+Así puedes tener:
+
+Caja 01
+│
+├── Sesión Juan
+│
+├── Capturas recibidas
+│
+├── Cobros
+│
+├── Abonos
+│
+├── Devoluciones
+│
+├── Retiros
+│
+└── Transferencias
+
+Y cada movimiento tiene:
+
+usuario
+fecha
+hora
+tipo
+monto
+referencia
+autorizador
+
+
+---
+
+20. Auditoría
+
+Para Y Soft considero esto obligatorio, especialmente por el sistema de permisos.
+
+audit_logs
+
+Ejemplo:
+
+{
+  businessId,
+
+  userId,
+
+  action,
+
+  entityType,
+  entityId,
+
+  locationId,
+
+  before,
+  after,
+
+  reason,
+
+  authorizedBy,
+
+  deviceId,
+
+  createdAt
+}
+
+Ejemplo real:
+
+13/08/2026 20:42
+
+Usuario:
+Pedro
+
+Acción:
+TRANSFER_SALE_CAPTURE
+
+Captura:
+#00482
+
+Total:
+$2,850
+
+Autorizó:
+Juan
+
+Dispositivo:
+Android
+
+
+---
+
+21. La parte que hará que soporte “muchos tipos de artículos”
+
+Yo agregaría características de control, no columnas específicas.
+
+Por ejemplo:
+
+products
+
+trackInventory
+trackLot
+trackExpiration
+trackSerial
+isWeighted
+isVariableWeight
+allowBackorder
+allowSale
+allowPurchase
+
+Así puedes tener:
+
+Tipo	Inventario	Lote	Caducidad	Serie	Peso
+
+Arroz	✓	opcional	opcional	—	—
+Carne	✓	✓	✓	—	✓
+Televisor	✓	—	—	✓	—
+Ropa	✓	—	—	—	—
+Servicio	—	—	—	—	—
+Medicamento*	✓	✓	✓	—	—
+Refacción	✓	—	—	opcional	—
+
+
+*Si posteriormente incorporas categorías reguladas, habría que añadir sus reglas específicas.
+
+
+---
+
+22. Y agregaría lotes desde ahora
+
+Especialmente por productos como carnes, alimentos, etc.
+
+lots/{lotId}
+
+{
+  businessId,
+
+  productId,
+  locationId,
+
+  lotNumber,
+
+  manufacturingDate,
+  expirationDate,
+
+  quantity,
+
+  supplierId,
+
+  receivedAt,
+
+  status
+}
+
+Así puedes saber:
+
+> “¿De qué lote salió este producto?”
+
+
+
+y posteriormente:
+
+> “¿Qué clientes recibieron productos del lote X?”
+
+
+
+Eso abre la puerta a trazabilidad y retiros de producto en el futuro.
+
+
+---
+
+23. Precios también separados
+
+No pondría:
+
+product.price
+
+como única fuente.
+
+Usaría:
+
+price_lists
+product_prices
+
+Ejemplo:
+
+Lista público
+Lista mayorista
+Lista distribuidor
+Lista especial
+
+Y:
+
+product_prices
+
+productId
+priceListId
+price
+minimumQuantity
+validFrom
+validUntil
+
+Así mañana puedes tener:
+
+1 pieza → $20
+10 piezas → $18
+50 piezas → $16
+
+sin rediseñar productos.
+
+
+---
+
+24. Propuesta final de núcleo de datos
+
+Si yo estuviera dirigiendo la arquitectura de Y Soft, el núcleo obligatorio sería:
+
+BUSINESS
+│
+├── USERS
+├── ROLES
+├── PERMISSIONS
+├── USER_LOCATIONS
+│
+├── LOCATIONS
+├── REGISTERS
+│
+├── PRODUCTS
+├── PRODUCT_VARIANTS
+├── PRODUCT_BARCODES
+├── PRODUCT_ATTRIBUTES
+├── CATEGORIES
+├── BRANDS
+├── UNITS
+├── UNIT_CONVERSIONS
+│
+├── PRICE_LISTS
+├── PRODUCT_PRICES
+├── TAX_PROFILES
+│
+├── INVENTORY_BALANCES
+├── INVENTORY_MOVEMENTS
+├── INVENTORY_COUNTS
+├── INVENTORY_COUNT_ITEMS
+├── INVENTORY_TRANSFERS
+├── INVENTORY_TRANSFER_ITEMS
+├── INVENTORY_ADJUSTMENTS
+│
+├── LOTS
+├── SERIAL_NUMBERS
+│
+├── SUPPLIERS
+├── PURCHASE_ORDERS
+├── PURCHASE_RECEIPTS
+├── PURCHASE_RECEIPT_ITEMS
+│
+├── CUSTOMERS
+├── CUSTOMER_ACCOUNTS
+├── CUSTOMER_CREDIT_LIMITS
+├── CUSTOMER_PAYMENTS
+│
+├── SALE_CAPTURES
+├── SALE_CAPTURE_ITEMS
+├── SALES
+├── SALE_ITEMS
+├── SALE_PAYMENTS
+│
+├── RETURNS
+├── RETURN_ITEMS
+│
+├── CASH_SESSIONS
+├── CASH_MOVEMENTS
+├── CASH_TRANSFERS
+│
+└── AUDIT_LOGS
+
+La regla arquitectónica principal
+
+No diseñes Y Soft pensando en “productos de abarrotes”.
+
+Diseñémoslo pensando en:
+
+> “Y Soft puede administrar cualquier artículo que tenga identidad, unidad, precio, existencia, ubicación y reglas de control.”
+
+
+
+Entonces mañana puedes meter carne por kilogramo, refrescos por caja, ropa por talla/color, electrónicos por número de serie, productos con caducidad, refacciones, paquetes, combos o incluso servicios, sin tener que reconstruir la base de datos.
+
+Y para tu caso particular, la separación que considero más importante es:
+
+Producto → Ubicación → Existencia → Movimiento → Operación → Usuario → Permiso → Auditoría.
+
+Esa cadena es la que hará que el sistema pueda crecer sin convertirse en un inventario frágil.
