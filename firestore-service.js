@@ -44,6 +44,7 @@
       entityId,
       action,
       reason: reason || null,
+      createdBy: ctx.uid,
       actorUid: ctx.uid,
       actorEmail: ctx.email,
       createdAt: timestamp(),

@@ -23,9 +23,9 @@
 - [x] Implementar bosquejos operables de abono, cierre de caja y devolución/ajuste.
 - [x] Fijar marca Y Soft en la cabecera común y reducir la franja verde superior.
 - [x] Validar móvil, navegación y campos libres; sincronizar con GitHub mediante commit y push.
-- [ ] Auditar y documentar las colecciones y estados que recibirán escrituras reales.
-- [ ] Implementar transacciones de ventas, abonos y ajustes con auditoría y referencias de origen.
-- [ ] Reforzar `firestore.rules` con autenticación, roles y validaciones de campos sensibles.
+- [x] Auditar y documentar las colecciones y estados que recibirán escrituras reales.
+- [x] Implementar transacciones de ventas, abonos y ajustes con auditoría y referencias de origen.
+- [x] Reforzar localmente `firestore.rules` con autenticación, roles y validaciones de campos sensibles.
 - [ ] Probar escrituras en Firebase con una cuenta autorizada y datos controlados.
 - [ ] Confirmar con el usuario políticas pendientes antes de activar impuestos, crédito, stock negativo o devoluciones.
 - [ ] Publicar `firestore.rules` desde una sesión administrativa verificable y confirmar su versión activa.
@@ -48,7 +48,12 @@
 - [ ] Validar visualmente y funcionalmente cada fase antes de iniciar la siguiente.
 - [ ] Validar la pantalla de alcance en estado no autenticado y documentar la revisión autenticada pendiente.
 - [ ] Sincronizar la Fase 1 sin publicar reglas Firestore ni habilitar operaciones nuevas.
-- [ ] Diseñar el catálogo consultable con búsqueda, categorías, códigos y ficha de producto.
-- [ ] Mostrar existencias por ubicación y diferenciar saldo resumido de movimientos auditables.
-- [ ] Preparar consultas y estados de inventario sin habilitar aún ajustes o transferencias reales.
-- [ ] Optimizar y validar las pantallas de productos e inventario en móvil antes del checkpoint.
+- [x] Diseñar el catálogo consultable con búsqueda, categorías, códigos y ficha de producto.
+- [x] Mostrar existencias por ubicación y diferenciar saldo resumido de movimientos auditables.
+- [x] Preparar consultas y estados de inventario sin habilitar aún ajustes o transferencias reales.
+- [x] Optimizar y validar las pantallas de productos e inventario en móvil antes del checkpoint.
+- [x] Verificar en GitHub la rama, commit y archivos visibles de la Fase 2.
+- [x] Auditar localmente por qué las reglas activas pueden rechazar las escrituras de ventas, abonos y ajustes.
+- [x] Corregir localmente la matriz de autorización y los contratos de escritura sin comodines inseguros.
+- [ ] Validar reglas con escenarios permitidos y rechazados antes de publicarlas.
+- [x] Invalidar la caché PWA con una nueva versión del Service Worker y sincronizar el shell actual.
