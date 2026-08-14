@@ -18,3 +18,8 @@
 - [ ] Rediseñar Inicio según la referencia móvil proporcionada.
 - [ ] Validar la pantalla en móvil, modo oscuro y estado de revisión.
 - [ ] Crear checkpoint y hacer push de la revisión visual a GitHub.
+- [ ] Implementar Nueva salida con búsqueda, escaneo, categorías, recientes y detalle de producto.
+- [ ] Implementar carrito persistente y revisión de venta contado/crédito sin definir políticas pendientes.
+- [ ] Implementar bosquejos operables de abono, cierre de caja y devolución/ajuste.
+- [ ] Fijar marca Y Soft en la cabecera común y reducir la franja verde superior.
+- [ ] Validar móvil, navegación y campos libres; sincronizar con GitHub mediante commit y push.

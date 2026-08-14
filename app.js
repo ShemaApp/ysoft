@@ -60,17 +60,18 @@
     }, [toast]);
     useEffect(() => { if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {}); }, []);
 
-    const addToCart = (product) => setCart((current) => {
+    const addToCart = (product, rawQty = 1) => setCart((current) => {
+      const qty = Math.max(1, Math.min(Number(rawQty) || 1, product.stock));
       const found = current.find((item) => item.id === product.id);
-      if (found) return current.map((item) => item.id === product.id ? { ...item, qty:Math.min(item.qty + 1, product.stock) } : item);
-      return [...current, { ...product, qty:1 }];
+      if (found) return current.map((item) => item.id === product.id ? { ...item, qty:Math.min(Number(item.qty) + qty, product.stock) } : item);
+      return [...current, { ...product, qty }];
     });
-    const updateQty = (id, delta) => setCart((current) => current.map((item) => item.id === id ? { ...item, qty:Math.max(0, Math.min(item.qty + delta, item.stock)) } : item).filter((item) => item.qty > 0));
-    const confirmSale = (saleType) => {
+    const setCartQty = (id, rawValue) => setCart((current) => current.map((item) => item.id === id ? { ...item, qty:Math.max(0, Math.min(Number(String(rawValue).replace(/[^0-9]/g, '')) || 0, item.stock)) } : item).filter((item) => item.qty > 0));
+    const confirmSale = (saleType, customerId) => {
       if (!cart.length) { setToast('Agrega al menos un producto antes de confirmar.'); return; }
       if (!cashOpen) { setToast('La caja está cerrada; abre un turno antes de vender.'); return; }
       const total = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
-      if (saleType === 'credito') { setToast('La venta está lista, pero la política de crédito sigue pendiente de confirmación.'); return; }
+      if (saleType === 'credito') { setToast(customerId ? 'La venta a crédito está lista, pero la política de crédito sigue pendiente de confirmación.' : 'Selecciona un cliente antes de solicitar la aprobación.'); return; }
       setProducts((current) => current.map((product) => { const line = cart.find((item) => item.id === product.id); return line ? { ...product, stock:product.stock - line.qty } : product; }));
       setCart([]); setToast('Venta de contado preparada en modo revisión · ' + D.money(total)); setView('inicio');
     };
@@ -86,20 +87,20 @@
     const screens = {
       inicio:h(Screens.Dashboard, { products, setView, movements:D.demoMovements, cashOpen }),
       productos:h(Screens.ProductsView, { products, onAdd:addToCart, setToast }),
-      ventas:h(Screens.SalesView, { products, cart, addToCart, updateQty, confirmSale, setView }),
+      ventas:h(Screens.SalesView, { products, customers, cart, addToCart, setCartQty, confirmSale, setView, setToast }),
       clientes:h(Screens.CustomersView, { customers, registerPayment, setToast }),
       caja:h(Screens.CashView, { cashOpen, setCashOpen, setToast }),
-      control:h(Screens.ControlView, { setView, setToast }),
+      control:h(Screens.ControlView, { products, setView, setToast }),
       reportes:h(Screens.ReportsView, { products, customers }),
       menu:h(Screens.MenuView, { setView, toggleTheme:() => setDarkMode((current) => !current), darkMode }),
       ajustes:h(Screens.SettingsView, { firebaseReady:Boolean(D.firestore), authUser, logout, setToast }),
     };
     return h('div', { className:'app-shell' }, [
       h('header', { className:'topbar', key:'top' }, [
-        h('button', { className:'brand-lockup brand-home', key:'brand', onClick:() => setView('inicio') }, [h('span', { className:'brand-mark-symbol', 'aria-hidden':true }, 'Y'), h('span', null, [h('span', { className:'brand-wordmark' }, 'Y Soft'), h('span', { className:'brand-sub' }, 'Operación diaria')])]),
-        h('div', { className:'top-actions', key:'actions' }, [h('button', { className:'icon-button', onClick:() => setDarkMode((current) => !current), 'aria-label':darkMode ? 'Usar modo claro' : 'Usar modo oscuro' }, h(Icon, { name:darkMode ? 'sun' : 'moon', size:17 })), h('button', { className:'avatar-button', onClick:() => setView('ajustes'), 'aria-label':'Abrir perfil' }, authUser ? D.initials(authUser.displayName || authUser.email || 'US') : 'YS')]),
+        h('button', { className:'brand-lockup brand-home', key:'brand', onClick:() => setView('inicio') }, [h('img', { key:'logo', className:'brand-logo-image', src:'./ysoft-mark.svg', alt:'Y Soft' }), h('span', { key:'copy' }, [h('span', { key:'wordmark', className:'brand-wordmark' }, 'Y Soft'), h('span', { key:'sub', className:'brand-sub' }, 'Operación diaria')])]),
+        h('div', { className:'top-actions', key:'actions' }, [h('button', { key:'theme', className:'icon-button', onClick:() => setDarkMode((current) => !current), 'aria-label':darkMode ? 'Usar modo claro' : 'Usar modo oscuro' }, h(Icon, { name:darkMode ? 'sun' : 'moon', size:17 })), h('button', { key:'profile', className:'avatar-button', onClick:() => setView('ajustes'), 'aria-label':'Abrir perfil' }, authUser ? D.initials(authUser.displayName || authUser.email || 'US') : 'YS')]),
       ]),
-      !D.hasFirebaseConfig && h('div', { className:'mode-strip', key:'mode' }, [h(Icon, { name:'alert', size:15 }), h('strong', null, 'Modo revisión local'), h('span', null, 'No se escriben ventas ni saldos en Firestore.'), h('button', { onClick:() => setView('ajustes') }, 'Configurar')]),
+      !D.hasFirebaseConfig && h('div', { className:'mode-strip', key:'mode' }, [h(Icon, { key:'icon', name:'alert', size:15 }), h('strong', { key:'title' }, 'Modo revisión local'), h('span', { key:'detail' }, 'No se escriben ventas ni saldos en Firestore.'), h('button', { key:'configure', onClick:() => setView('ajustes') }, 'Configurar')]),
       h('main', { className:'app-main', key:'main' }, screens[view] || screens.inicio),
       h(BottomNav, { view, setView, key:'nav' }), toast && h('div', { className:'toast', key:'toast' }, toast),
     ]);
