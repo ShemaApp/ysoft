@@ -15,11 +15,11 @@
 - [x] Integrar la configuración pública Firebase del proyecto `ysoft-637a137u53t99`.
 - [x] Verificar el arranque de Authentication y Firestore sin habilitar escrituras no aprobadas.
 - [x] Documentar la configuración y sincronizar la actualización con GitHub.
-- [ ] Rediseñar Inicio según la referencia móvil proporcionada.
-- [ ] Validar la pantalla en móvil, modo oscuro y estado de revisión.
-- [ ] Crear checkpoint y hacer push de la revisión visual a GitHub.
-- [ ] Implementar Nueva salida con búsqueda, escaneo, categorías, recientes y detalle de producto.
-- [ ] Implementar carrito persistente y revisión de venta contado/crédito sin definir políticas pendientes.
-- [ ] Implementar bosquejos operables de abono, cierre de caja y devolución/ajuste.
-- [ ] Fijar marca Y Soft en la cabecera común y reducir la franja verde superior.
-- [ ] Validar móvil, navegación y campos libres; sincronizar con GitHub mediante commit y push.
+- [x] Rediseñar Inicio según la referencia móvil proporcionada.
+- [x] Validar la pantalla en móvil, modo oscuro y estado de revisión.
+- [x] Crear checkpoint y hacer push de la revisión visual a GitHub.
+- [x] Implementar Nueva salida con búsqueda, escaneo, categorías, recientes y detalle de producto.
+- [x] Implementar carrito persistente y revisión de venta contado/crédito sin definir políticas pendientes.
+- [x] Implementar bosquejos operables de abono, cierre de caja y devolución/ajuste.
+- [x] Fijar marca Y Soft en la cabecera común y reducir la franja verde superior.
+- [x] Validar móvil, navegación y campos libres; sincronizar con GitHub mediante commit y push.
