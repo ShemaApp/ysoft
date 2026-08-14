@@ -27,8 +27,48 @@
   };
 
   D.Screens.MenuView = function MenuView({ setView, toggleTheme, darkMode }) {
-    const items = [['inicio','grid','Inicio','Resumen del turno'],['productos','box','Inventario','Productos y existencias'],['clientes','users','Clientes','Cartera y contactos'],['reportes','chart','Reportes','Lecturas operativas'],['control','rotate','Devoluciones y ajustes','Operaciones protegidas'],['ajustes','lock','Configuración','Firebase y permisos']];
+    const items = [['inicio','grid','Inicio','Resumen del turno'],['productos','box','Inventario','Productos y existencias'],['clientes','users','Clientes','Cartera y contactos'],['reportes','chart','Reportes','Lecturas operativas'],['control','rotate','Devoluciones y ajustes','Operaciones protegidas'],['permisos','lock','Acceso y alcance','Organización, ubicaciones y permisos'],['ajustes','lock','Configuración','Firebase y conexión']];
     return h(React.Fragment, null, [h('div', { className:'section-kicker' }, 'Y Soft · Menú secundario'), h('h1', { className:'page-title' }, 'Todo en su lugar'), h('p', { className:'page-intro' }, 'Ventas y Caja quedan a mano. Aquí encuentras el resto del cuaderno operativo.'), h('div', { className:'secondary-menu', style:{ marginTop:21 } }, items.map(([id,icon,label,detail]) => h('button', { className:'menu-item', key:id, onClick:() => setView(id) }, [h('span', { className:'menu-item-icon' }, h(Icon, { name:icon, size:18 })), h('span', { className:'menu-item-copy' }, [h('strong', null, label), h('small', null, detail)]), h(Icon, { name:'arrow', size:16 })]))), h('div', { className:'theme-panel' }, [h('div', null, [h('strong', null, darkMode ? 'Modo oscuro activo' : 'Modo claro activo'), h('span', null, 'Ajusta la lectura para tu turno.')]), h(Button, { kind:'secondary', icon:darkMode ? 'sun' : 'moon', onClick:toggleTheme }, darkMode ? 'Usar claro' : 'Usar oscuro')])]);
+  };
+
+  D.Screens.AccessView = function AccessView({ authUser, setView }) {
+    const identity = authUser ? (authUser.displayName || authUser.email || 'Usuario autenticado') : 'Revisión local';
+    const scopes = [
+      { icon:'grid', label:'Organización', value:'Pendiente de perfil', detail:'Define a qué distribuidora pertenece esta sesión.', tone:'orange' },
+      { icon:'box', label:'Ubicación', value:'Pendiente de asignación', detail:'Determina dónde se leen y afectan existencias.', tone:'orange' },
+      { icon:'users', label:'Rol operativo', value:'Pendiente de autorización', detail:'Se valida desde el miembro y las reglas Firestore.', tone:'blue' },
+    ];
+    const operations = [
+      ['Capturar pedido','Registrar productos sin cobrar','Disponible cuando exista permiso de captura.','orange'],
+      ['Transferir a caja','Enviar la captura bloqueada al cajero','No confirma venta ni mueve dinero.','green'],
+      ['Revisar y cobrar','Modificar, autorizar y cerrar la venta','Reservado para una sesión de caja autorizada.','blue'],
+      ['Registrar abono','Aplicar un pago a un crédito existente','Requiere permiso de cartera y referencia.','blue'],
+      ['Ajustar inventario','Solicitar un movimiento con motivo','Requiere autorización separada; no cambia stock al solicitar.','orange'],
+    ];
+    return h(React.Fragment, null, [
+      h('div', { className:'section-kicker' }, 'Configuración · Alcance operativo'),
+      h('h1', { className:'page-title' }, 'Quién puede hacer qué'),
+      h('p', { className:'page-intro' }, 'Y Soft separa identidad, ubicación y operación. Esta pantalla muestra el alcance que deberá confirmar Firestore antes de habilitar cada acción.'),
+      h('section', { className:'identity-banner' }, [
+        h('div', { className:'identity-avatar' }, D.initials(identity)),
+        h('div', { className:'identity-copy' }, [h('span', null, 'Sesión actual'), h('strong', null, identity), h('small', null, authUser ? 'Autenticación activa · perfil de organización pendiente' : 'Sin autenticación · solo revisión visual')]),
+        h(Status, { tone:authUser ? 'green' : 'orange' }, authUser ? 'Autenticado' : 'Local'),
+      ]),
+      h('div', { className:'scope-grid' }, scopes.map((scope) => h('section', { className:'scope-card', key:scope.label }, [
+        h('div', { className:'scope-card-top' }, [h('span', { className:'scope-icon' }, h(Icon, { name:scope.icon, size:17 })), h(Status, { tone:scope.tone }, scope.tone === 'green' ? 'Listo' : 'Pendiente')]),
+        h('span', { className:'scope-label' }, scope.label),
+        h('strong', { className:'scope-value' }, scope.value),
+        h('small', { className:'scope-detail' }, scope.detail),
+      ]))),
+      h('div', { className:'content-heading' }, h('div', null, [h('h2', null, 'Permisos por operación'), h('p', null, 'La interfaz orienta; las reglas Firestore deciden.')])) ,
+      h('section', { className:'panel permission-panel' }, operations.map(([label, detail, note, tone]) => h('div', { className:'permission-row', key:label }, [
+        h('span', { className:'permission-mark permission-mark-' + tone }, h(Icon, { name:tone === 'green' ? 'check' : 'lock', size:15 })),
+        h('div', { className:'permission-copy' }, [h('strong', null, label), h('span', null, detail), h('small', null, note)]),
+        h(Icon, { name:'arrow', size:15 }),
+      ]))),
+      h('div', { className:'notice' }, [h(Icon, { name:'alert', size:15 }), h('span', null, 'No se habilitan permisos temporales desde esta pantalla. Primero se define el autorizador, la vigencia y la ubicación; después se implementa la regla.')]),
+      h('div', { className:'flow-actions' }, [h(Button, { kind:'secondary', onClick:() => setView('menu') }, 'Volver al menú'), h(Button, { kind:'primary', onClick:() => setView('ajustes') }, 'Ver decisiones pendientes')]),
+    ]);
   };
 
   D.Screens.SettingsView = function SettingsView({ firebaseReady, authUser, logout, setToast }) {

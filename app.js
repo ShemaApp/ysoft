@@ -6,7 +6,7 @@
 (function () {
   'use strict';
   const D = window.YSoft = window.YSoft || {};
-  const h = D.h; const { useEffect, useState } = React; const { Icon, Button, BottomNav } = D;
+  const h = D.h; const { useEffect, useMemo, useState } = React; const { Icon, Button, BottomNav } = D;
   const getHashView = () => window.location.hash.replace(/^#/, '') || 'inicio';
 
   function AuthScreen({ error }) {
@@ -31,6 +31,8 @@
   function App() {
     const [authUser, setAuthUser] = useState(null); const [authChecked, setAuthChecked] = useState(!D.hasFirebaseConfig);
     const [view, setViewState] = useState(getHashView); const [products, setProducts] = useState(D.demoProducts); const [customers, setCustomers] = useState(D.demoCustomers);
+    const [locations, setLocations] = useState(D.demoLocations || []); const [activeLocationId, setActiveLocationId] = useState(() => window.localStorage.getItem('ysoft-location') || D.locationId || (D.demoLocations && D.demoLocations[0] ? D.demoLocations[0].id : 'default'));
+    const [inventoryBalances, setInventoryBalances] = useState(D.demoInventoryBalances || {}); const [inventoryMovements, setInventoryMovements] = useState(D.demoInventoryMovements || []);
     const [cart, setCart] = useState([]); const [notification, setNotification] = useState(null); const [savingOperation, setSavingOperation] = useState(''); const [cashOpen, setCashOpen] = useState(true); const [darkMode, setDarkMode] = useState(() => window.localStorage.getItem('ysoft-theme') === 'dark');
     const setView = (nextView) => { setViewState(nextView); window.location.hash = nextView === 'inicio' ? '' : nextView; };
 
@@ -65,6 +67,36 @@
       }, () => setNotification({ message:'No se pudo leer clientes remotos; se conserva la vista de revisión.', type:'error' }));
       return unsubscribe;
     }, [authUser]);
+
+    useEffect(() => { window.localStorage.setItem('ysoft-location', activeLocationId); }, [activeLocationId]);
+    useEffect(() => {
+      if (!D.firestore || !authUser) return undefined;
+      const unsubscribe = D.firestore.collection('locations').where('organizationId', '==', D.organizationId).where('active', '==', true).limit(20).onSnapshot((snapshot) => {
+        const remote = snapshot.docs.map((doc) => ({ id:doc.id, ...doc.data() }));
+        if (remote.length) setLocations(remote);
+      }, () => setNotification({ message:'No se pudieron leer ubicaciones remotas; se conserva el alcance local.', type:'error' }));
+      return unsubscribe;
+    }, [authUser]);
+    useEffect(() => {
+      if (!D.firestore || !authUser || !activeLocationId) return undefined;
+      const unsubscribe = D.firestore.collection('inventoryBalances').where('organizationId', '==', D.organizationId).where('locationId', '==', activeLocationId).limit(200).onSnapshot((snapshot) => {
+        const next = { ...(D.demoInventoryBalances || {}) };
+        snapshot.docs.forEach((doc) => {
+          const balance = doc.data() || {}; const productId = balance.productId || doc.id;
+          next[productId] = { ...(next[productId] || {}), [activeLocationId]: Number(balance.quantity ?? balance.stock ?? balance.available ?? 0) };
+        });
+        if (snapshot.size) setInventoryBalances(next);
+      }, () => setNotification({ message:'No se pudieron leer existencias de la ubicación; se conserva la vista local.', type:'error' }));
+      return unsubscribe;
+    }, [authUser, activeLocationId]);
+    useEffect(() => {
+      if (!D.firestore || !authUser || !activeLocationId) return undefined;
+      const unsubscribe = D.firestore.collection('inventoryMovements').where('organizationId', '==', D.organizationId).where('locationId', '==', activeLocationId).limit(60).onSnapshot((snapshot) => {
+        const remote = snapshot.docs.map((doc) => ({ id:doc.id, ...doc.data() }));
+        if (remote.length) setInventoryMovements(remote);
+      }, () => {});
+      return unsubscribe;
+    }, [authUser, activeLocationId]);
 
     useEffect(() => {
       if (!notification || notification.type === 'loading') return undefined;
@@ -119,19 +151,24 @@
       finally { setSavingOperation(''); }
     };
     const logout = () => D.firebaseAuth && D.firebaseAuth.signOut();
+    const scopedProducts = useMemo(() => products.map((product) => {
+      const locationStock = inventoryBalances[product.id] && inventoryBalances[product.id][activeLocationId];
+      return { ...product, stock:Number.isFinite(Number(locationStock)) ? Number(locationStock) : Number(product.stock || 0) };
+    }), [products, inventoryBalances, activeLocationId]);
 
     if (D.hasFirebaseConfig && !authChecked) return h('div', { className:'auth-screen' }, h('div', { className:'auth-card' }, 'Comprobando acceso…'));
     if (D.hasFirebaseConfig && !authUser) return h(AuthScreen, { error:D.firebaseBootError });
     const Screens = D.Screens;
     const screens = {
-      inicio:h(Screens.Dashboard, { products, setView, movements:D.demoMovements, cashOpen }),
-      productos:h(Screens.ProductsView, { products, onAdd:addToCart, setToast }),
-      ventas:h(Screens.SalesView, { products, customers, cart, addToCart, setCartQty, confirmSale, setView, setToast:notify, savingOperation }),
+      inicio:h(Screens.Dashboard, { products:scopedProducts, setView, movements:D.demoMovements, cashOpen }),
+      productos:h(Screens.ProductsView, { products:scopedProducts, locations, activeLocationId, onLocationChange:setActiveLocationId, inventoryBalances, inventoryMovements, onAdd:addToCart, setToast:notify }),
+      ventas:h(Screens.SalesView, { products:scopedProducts, customers, cart, addToCart, setCartQty, confirmSale, setView, setToast:notify, savingOperation }),
       clientes:h(Screens.CustomersView, { customers, registerPayment, setToast:notify, savingOperation }),
       caja:h(Screens.CashView, { cashOpen, setCashOpen, setToast }),
-      control:h(Screens.ControlView, { products, setView, setToast:notify, saveAdjustment, savingOperation }),
-      reportes:h(Screens.ReportsView, { products, customers }),
+      control:h(Screens.ControlView, { products:scopedProducts, setView, setToast:notify, saveAdjustment, savingOperation }),
+      reportes:h(Screens.ReportsView, { products:scopedProducts, customers }),
       menu:h(Screens.MenuView, { setView, toggleTheme:() => setDarkMode((current) => !current), darkMode }),
+      permisos:h(Screens.AccessView, { authUser, setView }),
       ajustes:h(Screens.SettingsView, { firebaseReady:Boolean(D.firestore), authUser, logout, setToast }),
     };
     return h('div', { className:'app-shell' }, [

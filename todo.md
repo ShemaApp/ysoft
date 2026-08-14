@@ -32,3 +32,23 @@
 - [ ] Ejecutar una prueba controlada de lectura y escritura con usuario autorizado, sin datos de prueba permanentes.
 - [x] Añadir indicadores de carga y bloquear doble envío al registrar ventas, abonos y ajustes.
 - [x] Añadir notificaciones de éxito y error con mensajes operativos comprensibles.
+- [ ] Formalizar `capturasPendientes` separadas de ventas confirmadas y cobros.
+- [ ] Definir estados, permisos y trazabilidad de capturista, cajero y caja.
+- [ ] Crear bosquejo visual de captura pendiente, transferencia y revisión de caja.
+- [ ] Aprobar el flujo antes de implementar cambios en la aplicación o Firestore.
+- [ ] Definir ubicaciones de inventario y alcance global por organización.
+- [ ] Definir permisos permanentes por operación y ubicación autorizada.
+- [ ] Definir permisos temporales con inicio, fin, autorizador, estado y auditoría.
+- [ ] Modelar sesiones auxiliares de captura separadas de cajas y ventas confirmadas.
+- [ ] Preparar matriz de reglas Firestore para usuario, rol, ubicación y vigencia.
+- [ ] Cruzar la referencia guardada con la arquitectura de permisos y clasificar cada entidad.
+- [ ] Documentar para cada entidad compatible su propósito y forma de implementación.
+- [ ] Documentar incompatibilidades, riesgos y elementos archivados para futuras iteraciones.
+- [ ] Optimizar las pantallas relacionadas en cada fase, no solo el modelo de datos.
+- [ ] Validar visualmente y funcionalmente cada fase antes de iniciar la siguiente.
+- [ ] Validar la pantalla de alcance en estado no autenticado y documentar la revisión autenticada pendiente.
+- [ ] Sincronizar la Fase 1 sin publicar reglas Firestore ni habilitar operaciones nuevas.
+- [ ] Diseñar el catálogo consultable con búsqueda, categorías, códigos y ficha de producto.
+- [ ] Mostrar existencias por ubicación y diferenciar saldo resumido de movimientos auditables.
+- [ ] Preparar consultas y estados de inventario sin habilitar aún ajustes o transferencias reales.
+- [ ] Optimizar y validar las pantallas de productos e inventario en móvil antes del checkpoint.

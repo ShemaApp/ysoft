@@ -9,6 +9,23 @@
     { id:'p-005', code:'GRA-009', name:'Fríjol cargamanto 1 kg', category:'Abarrotes', unit:'bulto x 12', stock:4, price:63800 },
     { id:'p-006', code:'EMP-007', name:'Bolsas mercado mediana', category:'Empaque', unit:'paquete x 100', stock:31, price:11900 },
   ];
+  D.demoLocations = [
+    { id:'default', name:'Bodega principal', code:'BOD-01', type:'Bodega', city:'Operación central' },
+    { id:'centro', name:'Punto de venta Centro', code:'PDV-01', type:'Punto de venta', city:'Zona centro' },
+  ];
+  D.demoInventoryBalances = {
+    'p-001': { default:42, centro:17 },
+    'p-002': { default:18, centro:9 },
+    'p-003': { default:7, centro:3 },
+    'p-004': { default:23, centro:11 },
+    'p-005': { default:4, centro:2 },
+    'p-006': { default:31, centro:14 },
+  };
+  D.demoInventoryMovements = [
+    { id:'im-001', productId:'p-001', locationId:'default', type:'Entrada', quantity:60, quantitySigned:60, stockBefore:0, stockAfter:42, reason:'Recepción de proveedor', time:'Hoy · 08:30' },
+    { id:'im-002', productId:'p-001', locationId:'default', type:'Salida', quantity:12, quantitySigned:-12, stockBefore:54, stockAfter:42, reason:'Venta de contado', time:'Hoy · 10:42' },
+    { id:'im-003', productId:'p-003', locationId:'centro', type:'Conteo', quantity:1, quantitySigned:-1, stockBefore:4, stockAfter:3, reason:'Diferencia de conteo · pendiente de autorización', time:'Ayer · 16:10' },
+  ];
   D.demoCustomers = [
     { id:'c-001', name:'Minimercado El Portal', contact:'Cuenta activa · 3 créditos', balance:1234000, status:'Al día' },
     { id:'c-002', name:'Tienda La 14', contact:'Cuenta activa · 1 crédito', balance:478000, status:'Al día' },
