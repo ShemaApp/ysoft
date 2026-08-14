@@ -27,3 +27,7 @@ La página remota entrega también el `index.html` actual, con `firebase-init.js
 Antes de esta corrección, `404.html` cargaba la arquitectura histórica (`componentes/`, `pantallas/` y servicios antiguos) en lugar del shell actual. La entrada podía aparecer si la instalación Android conservaba un fallback de GitHub Pages o abría una ruta no resuelta. En ese caso, una sesión autenticada podía llegar a `app.js` sin el conjunto actual de `D.Screens` y dejar el contenido principal sin montar.
 
 La corrección alinea `404.html` con `index.html`, fija `start_url` y `scope` explícitos a `/ysoft/`, cambia la caché a `v7-boot-fallback`, precarga los CDN de React/Firebase cuando el navegador lo permite y muestra un mensaje de error con botón de recarga si el arranque falla. Falta confirmar esta hipótesis en la instalación Android después del despliegue.
+
+## Validación posterior al despliegue
+
+El despliegue de Pages del commit `8fd266e9321bebe101630185544d92191c150533` terminó correctamente. La URL pública entrega `ysoft-pwa-v7-boot-fallback`, el manifiesto con `id`, `start_url` y `scope` explícitos, y tanto `index.html` como `404.html` incluyen la pantalla de arranque, `firestore-service.js`, `screens-more.js` y el manejador de error. En una pestaña normal, la pantalla de acceso se monta correctamente y la consola no reporta errores.
